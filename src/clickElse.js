@@ -12,6 +12,8 @@ class clickElse {
 		this.temporarilyDisabled = []; // [wrapperId, ...]
 		this.excluded = []; // [ [Element, wrapperId], ... ]
 
+		this.after = []; // [function(wrapperElement, hasOwnPointerEvents)]
+
 		this._setUpWrapper = wrapper => {
 			if (!wrapper.hasAttribute('click-else-id')) {
 				wrapper.setAttribute('click-else', '');
@@ -147,29 +149,43 @@ class clickElse {
 							'[click-else-id="' + this.temporarilyDisabled[i] + '"]'
 						)
 					)) {
-						this._enable(i);
+						this._enableIndex(i);
 					}
 				}
 
-				let id = el.getAttribute('click-else-id');
-				if (!this.temporarilyDisabled.includes(id)) {
-					for (let i = 0; i < el.children.length; i++) {
-						el.children[i].style.pointerEvents = this.tracked.find((innerArr) => {
-							return innerArr[0] === el.children[i];
-						})[1];
-					}
-					this.temporarilyDisabled.push(id);
+				if (!this.temporarilyDisabled.includes(
+					el.getAttribute('click-else-id')
+				)) {
+					this._disableWrapper(el);
 				}
 			} else {
 				let i = this.temporarilyDisabled.length;
 				while (i--) {
-					this._enable(i);
+					this._enableIndex(i);
 				}
 			}
 		});
 	}
 
-	_enable(i) {
+	_afterCall(wrapper, hasOwnPointerEvents) {
+		for (let f of this.after) {
+			f(wrapper, hasOwnPointerEvents);
+		}
+	}
+
+	_disableWrapper(el) {
+		for (let i = 0; i < el.children.length; i++) {
+			el.children[i].style.pointerEvents = this.tracked.find((innerArr) => {
+				return innerArr[0] === el.children[i];
+			})[1];
+		}
+		this.temporarilyDisabled.push(
+			el.getAttribute('click-else-id')
+		);
+		this._afterCall(el, true);
+	}
+
+	_enableIndex(i) {
 		let wrapper = document.querySelector(
 			'[click-else-id="' + this.temporarilyDisabled[i] + '"]'
 		);
@@ -187,6 +203,7 @@ class clickElse {
 			}
 		}
 		this.temporarilyDisabled.splice(i, 1);
+		this._afterCall(wrapper, false);
 	}
 
 	getWrapper(el) {

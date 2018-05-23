@@ -143,13 +143,12 @@ class clickElse {
 				}
 
 				let i = this.temporarilyDisabled.length;
+				let tmpWrapper;
 				while (i--) {
 					if (!parentWrappersArr.includes(
-						document.querySelector(
-							'[click-else-id="' + this.temporarilyDisabled[i] + '"]'
-						)
+						tmpWrapper = this.getWrapperById(this.temporarilyDisabled[i])
 					)) {
-						this._enableIndex(i);
+						this.enableWrapper(tmpWrapper);
 					}
 				}
 
@@ -161,10 +160,18 @@ class clickElse {
 			} else {
 				let i = this.temporarilyDisabled.length;
 				while (i--) {
-					this._enableIndex(i);
+					this.enableWrapper(
+						this.getWrapperById(this.temporarilyDisabled[i])
+					);
 				}
 			}
 		});
+	}
+
+	getWrapperById(id) {
+		return document.querySelector(
+			'[click-else-id="' + id + '"]'
+		)
 	}
 
 	_afterCall(wrapper, hasOwnPointerEvents) {
@@ -173,37 +180,38 @@ class clickElse {
 		}
 	}
 
-	_disableWrapper(el) {
-		for (let i = 0; i < el.children.length; i++) {
-			el.children[i].style.pointerEvents = this.tracked.find((innerArr) => {
-				return innerArr[0] === el.children[i];
+	_disableWrapper(wrapperElement) {
+		for (let i = 0; i < wrapperElement.children.length; i++) {
+			wrapperElement.children[i].style.pointerEvents = this.tracked.find((innerArr) => {
+				return innerArr[0] === wrapperElement.children[i];
 			})[1];
 		}
 		this.temporarilyDisabled.push(
-			el.getAttribute('click-else-id')
+			wrapperElement.getAttribute('click-else-id')
 		);
-		this._afterCall(el, true);
+		this._afterCall(wrapperElement, true);
 	}
 
-	_enableIndex(i) {
-		let wrapper = document.querySelector(
-			'[click-else-id="' + this.temporarilyDisabled[i] + '"]'
-		);
-		for (let j = 0; j < wrapper.children.length; j++) {
+	enableWrapper(wrapperElement) {
+		for (let j = 0; j < wrapperElement.children.length; j++) {
 			let index = this.tracked.findIndex((innerArr) => {
-				return innerArr[0] === wrapper.children[j];
+				return innerArr[0] === wrapperElement.children[j];
 			});
-			this.tracked[index][0] = wrapper.children[j];
-			this.tracked[index][1] = wrapper.children[j].style.pointerEvents;
-			this.tracked[index][2] = wrapper.getAttribute('click-else-id');
+			this.tracked[index][0] = wrapperElement.children[j];
+			this.tracked[index][1] = wrapperElement.children[j].style.pointerEvents;
+			this.tracked[index][2] = wrapperElement.getAttribute('click-else-id');
 			if (!this.excluded.find((el) => {
 				return el[0] === this.tracked[index][0];
 			})) {
-				wrapper.children[j].style.pointerEvents = 'none';
+				wrapperElement.children[j].style.pointerEvents = 'none';
 			}
 		}
-		this.temporarilyDisabled.splice(i, 1);
-		this._afterCall(wrapper, false);
+		this.temporarilyDisabled.splice(
+			this.temporarilyDisabled.findIndex(el => {
+				return el === wrapperElement.getAttribute('click-else-id');
+			}, 1)
+		);
+		this._afterCall(wrapperElement, false);
 	}
 
 	getWrapper(el) {
